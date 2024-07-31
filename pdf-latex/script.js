@@ -15,11 +15,17 @@ document.getElementById('uploadForm').onsubmit = function(e) {
         body: formData
     })
     .then(function(response) {
-        console.log('Response received');
+        console.log('Response received', response);
+        if (!response.ok) {
+            throw new Error('Network response was not ok: ' + response.statusText);
+        }
         return response.json();
     })
     .then(function(data) {
         console.log('Data received:', data);
+        if (data.error) {
+            throw new Error(data.error);
+        }
         outputContent.textContent = data.latex_response || 'No LaTeX content received';
         if (data.latex_response) {
             downloadButton.style.display = 'inline-flex';
@@ -31,6 +37,7 @@ document.getElementById('uploadForm').onsubmit = function(e) {
     });
 };
 
+// ... rest of your script
 document.getElementById('downloadButton').onclick = function() {
     var content = document.getElementById('outputContent').textContent;
     var blob = new Blob([content], { type: 'text/plain' });

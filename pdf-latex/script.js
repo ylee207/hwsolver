@@ -1,4 +1,4 @@
-const API_ENDPOINT = 'YOUR_AWS_API_GATEWAY_ENDPOINT'; // Replace with your actual API Gateway URL
+const API_ENDPOINT = '{{API_ENDPOINT}}'; // Netlify will replace this during build
 
 console.log('Script is running');
 document.getElementById('uploadForm').onsubmit = function(e) {

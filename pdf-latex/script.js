@@ -1,6 +1,7 @@
 const API_ENDPOINT = '{{API_ENDPOINT}}'; // Netlify will replace this during build
 
-console.log('Script is running');
+console.log('API Endpoint:', API_ENDPOINT);
+
 document.getElementById('uploadForm').onsubmit = function(e) {
     e.preventDefault();
     console.log('Form submitted');

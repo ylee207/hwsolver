@@ -34,10 +34,26 @@ exports.handler = async (event, context) => {
   // Log the received event for debugging
   console.log('Received event:', JSON.stringify(event));
 
+  // Handle CORS preflight request
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      },
+      body: '',
+    };
+  }
+
   // Check if it's a POST request
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+      },
       body: JSON.stringify({ error: 'Method Not Allowed' }),
     };
   }
@@ -49,6 +65,9 @@ exports.handler = async (event, context) => {
     if (!files || !files.file || !files.file[0]) {
       return {
         statusCode: 400,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+        },
         body: JSON.stringify({ error: 'No file uploaded' }),
       };
     }
@@ -91,6 +110,9 @@ exports.handler = async (event, context) => {
     console.error('Error:', error);
     return {
       statusCode: 500,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+      },
       body: JSON.stringify({ error: error.message }),
     };
   }

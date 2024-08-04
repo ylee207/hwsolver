@@ -31,27 +31,29 @@ const pdfToText = async (pdfBuffer) => {
 
 // Main handler function
 exports.handler = async (event, context) => {
+  // Log the received event for debugging
+  console.log('Received event:', JSON.stringify(event));
+
+  // Check if it's a POST request
+  if (event.httpMethod !== 'POST') {
+    return {
+      statusCode: 405,
+      body: JSON.stringify({ error: 'Method Not Allowed' }),
+    };
+  }
+
   try {
-    console.log('Received event:', JSON.stringify(event));
-
-    let pdfContent;
-    if (event.httpMethod === 'POST') {
-      // Handle multipart form data
-      const { files } = await parseMultipartForm(event);
-      pdfContent = files.file[0].content;
-    } else {
+    // Parse the multipart form data
+    const { files } = await parseMultipartForm(event);
+    
+    if (!files || !files.file || !files.file[0]) {
       return {
         statusCode: 400,
-        body: JSON.stringify({ error: 'Invalid request method' }),
+        body: JSON.stringify({ error: 'No file uploaded' }),
       };
     }
 
-    if (!pdfContent) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: 'No PDF content found' }),
-      };
-    }
+    const pdfContent = files.file[0].content;
 
     // Extract text from PDF
     const text = await pdfToText(pdfContent);

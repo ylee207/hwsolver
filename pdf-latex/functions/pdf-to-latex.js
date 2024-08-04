@@ -80,9 +80,9 @@ exports.handler = async (event, context) => {
 
     console.log('Sending to OpenAI');
     const completion = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',  // Using a faster model
+      model: 'gpt-4o-mini',  // Using a faster model
       messages: [
-        { role: 'system', content: 'Convert the given text into a LaTeX document. Use appropriate LaTeX commands and environments.' },
+        { role: 'system', content: 'Solve the problems in the document and return a solved answer in a correct, well-structured LaTex file. Do not say anything outside the content of the document.' },
         { role: 'user', content: text },
       ],
       max_tokens: 1000,  // Limiting the response size

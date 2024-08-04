@@ -1,8 +1,8 @@
-const API_ENDPOINT = '/.netlify/functions/pdf-to-latex'; // Path to your Netlify function
+const API_ENDPOINT = '/.netlify/functions/pdf-to-latex';
 
 console.log('API Endpoint:', API_ENDPOINT);
 
-document.getElementById('uploadForm').onsubmit = function(e) {
+document.getElementById('uploadForm').onsubmit = async function(e) {
     e.preventDefault();
     console.log('Form submitted');
     const outputContent = document.getElementById('outputContent');
@@ -16,37 +16,39 @@ document.getElementById('uploadForm').onsubmit = function(e) {
     loadingIndicator.style.display = 'block';
     
     const formData = new FormData(this);
-    fetch(API_ENDPOINT, {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => {
-        console.log('Response received', response);
-        if (!response.ok) {
-            throw new Error('Network response was not ok: ' + response.statusText);
-        }
-        return response.json();
-    })
-    .then(data => {
+    try {
+        console.log('Sending request to:', API_ENDPOINT);
+        const response = await fetch(API_ENDPOINT, {
+            method: 'POST',
+            body: formData
+        });
+        console.log('Response received:', response);
+        console.log('Response status:', response.status);
+        console.log('Response headers:', response.headers);
+
+        const data = await response.json();
         console.log('Data received:', data);
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}, message: ${data.error || 'Unknown error'}`);
+        }
+
         if (data.error) {
             throw new Error(data.error);
         }
+
         outputContent.textContent = data.latex_response || 'No LaTeX content received';
         if (data.latex_response) {
             downloadButton.style.display = 'inline-flex';
         }
-    })
-    .catch(error => {
+    } catch (error) {
         console.error('Error:', error);
         outputContent.textContent = 'An error occurred: ' + error.message;
-    })
-    .finally(() => {
+    } finally {
         submitButton.disabled = false;
         loadingIndicator.style.display = 'none';
-    });
+    }
 };
-
 
 document.getElementById('downloadButton').onclick = function() {
     const content = document.getElementById('outputContent').textContent;

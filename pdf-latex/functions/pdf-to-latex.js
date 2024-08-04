@@ -31,56 +31,54 @@ const pdfToText = async (pdfBuffer) => {
 
 // Main handler function
 exports.handler = async (event, context) => {
-  // Log the received event for debugging
-  console.log('Received event:', JSON.stringify(event));
+  console.log('Event:', JSON.stringify(event, null, 2));
+  console.log('Context:', JSON.stringify(context, null, 2));
+
+  // Set CORS headers
+  const headers = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  };
 
   // Handle CORS preflight request
   if (event.httpMethod === 'OPTIONS') {
     return {
-      statusCode: 200,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      },
+      statusCode: 204,
+      headers,
       body: '',
     };
   }
 
   // Check if it's a POST request
   if (event.httpMethod !== 'POST') {
+    console.log('Received non-POST request:', event.httpMethod);
     return {
       statusCode: 405,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-      },
-      body: JSON.stringify({ error: 'Method Not Allowed' }),
+      headers,
+      body: JSON.stringify({ error: 'Method Not Allowed', method: event.httpMethod }),
     };
   }
 
   try {
-    // Parse the multipart form data
+    console.log('Parsing multipart form data');
     const { files } = await parseMultipartForm(event);
     
     if (!files || !files.file || !files.file[0]) {
+      console.log('No file uploaded');
       return {
         statusCode: 400,
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-        },
+        headers,
         body: JSON.stringify({ error: 'No file uploaded' }),
       };
     }
 
+    console.log('File received, extracting text');
     const pdfContent = files.file[0].content;
-
-    // Extract text from PDF
     const text = await pdfToText(pdfContent);
 
-    // Prepare prompt for GPT-4
+    console.log('Text extracted, sending to OpenAI');
     const prompt = `Convert the following text into a LaTeX document:\n\n${text}`;
-
-    // Send request to GPT-4
     const completion = await openai.chat.completions.create({
       model: 'gpt-4',
       messages: [
@@ -95,25 +93,21 @@ exports.handler = async (event, context) => {
 
     const latexResponse = completion.choices[0].message.content;
 
+    console.log('Response received from OpenAI');
     return {
       statusCode: 200,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Content-Type': 'application/json',
-      },
+      headers: { ...headers, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         latex_response: latexResponse,
         message: 'PDF processed and converted to LaTeX successfully',
       }),
     };
   } catch (error) {
-    console.error('Error:', error);
+    console.error('Error in handler:', error);
     return {
       statusCode: 500,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-      },
-      body: JSON.stringify({ error: error.message }),
+      headers,
+      body: JSON.stringify({ error: 'Internal Server Error', details: error.message }),
     };
   }
 };

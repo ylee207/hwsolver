@@ -11,7 +11,7 @@ const openai = new OpenAI({
 const parseMultipartForm = async (event) => {
   return new Promise((resolve, reject) => {
     const form = new multiparty.Form();
-    form.parse(event, (err, fields, files) => {
+    form.parse(event.body, (err, fields, files) => {
       if (err) reject(err);
       else resolve({ fields, files });
     });
@@ -74,7 +74,7 @@ exports.handler = async (event, context) => {
     }
 
     console.log('File received, extracting text');
-    const pdfContent = files.file[0].content;
+    const pdfContent = files.file[0].buffer;
     const text = await pdfToText(pdfContent);
 
     console.log('Text extracted, sending to OpenAI');

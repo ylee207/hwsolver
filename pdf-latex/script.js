@@ -20,7 +20,10 @@ document.getElementById('uploadForm').onsubmit = async function(e) {
         console.log('Sending request to:', API_ENDPOINT);
         const response = await fetch(API_ENDPOINT, {
             method: 'POST',
-            body: formData
+            body: formData,
+            headers: {
+                'Accept': 'application/json',
+            }
         });
         console.log('Response received:', response);
         console.log('Response status:', response.status);

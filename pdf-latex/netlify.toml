@@ -3,11 +3,16 @@
   command = "sed -i 's|{{API_ENDPOINT}}|'$API_ENDPOINT'|g' script.js"
   functions = "functions"
 
+[functions]
+  # Set the timeout for all functions (in seconds)
+  timeout = 26
+
+  # List of external modules that Netlify should include
+  external_node_modules = ["pdf-parse", "openai", "busboy"]
 
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
 
-[functions]
-  timeout = 30
+

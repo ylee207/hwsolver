@@ -8,9 +8,12 @@ document.getElementById('uploadForm').onsubmit = function(e) {
     const outputContent = document.getElementById('outputContent');
     const downloadButton = document.getElementById('downloadButton');
     const submitButton = document.getElementById('submitButton');
-    outputContent.textContent = 'Processing... Please wait.';
+    const loadingIndicator = document.getElementById('loadingIndicator');
+    
+    outputContent.textContent = '';
     downloadButton.style.display = 'none';
     submitButton.disabled = true;
+    loadingIndicator.style.display = 'block';
     
     const formData = new FormData(this);
     fetch(API_ENDPOINT, {
@@ -40,8 +43,10 @@ document.getElementById('uploadForm').onsubmit = function(e) {
     })
     .finally(() => {
         submitButton.disabled = false;
+        loadingIndicator.style.display = 'none';
     });
 };
+
 
 document.getElementById('downloadButton').onclick = function() {
     const content = document.getElementById('outputContent').textContent;

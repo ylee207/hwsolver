@@ -2,18 +2,15 @@ const { OpenAI } = require('openai');
 const busboy = require('busboy');
 const pdf = require('pdf-parse');
 
-// Configure OpenAI client
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// Helper function to parse multipart form data
 const parseMultipartForm = (event) => {
   return new Promise((resolve, reject) => {
     const fields = {};
     const files = {};
 
-    // Check if the body is base64 encoded
     const body = event.isBase64Encoded
       ? Buffer.from(event.body, 'base64')
       : event.body;
@@ -21,17 +18,10 @@ const parseMultipartForm = (event) => {
     const bb = busboy({ headers: event.headers });
 
     bb.on('file', (name, file, info) => {
-      const { filename, encoding, mimeType } = info;
       const chunks = [];
-
       file.on('data', (data) => chunks.push(data));
       file.on('end', () => {
-        files[name] = {
-          filename,
-          content: Buffer.concat(chunks),
-          encoding,
-          mimeType
-        };
+        files[name] = Buffer.concat(chunks);
       });
     });
 
@@ -46,34 +36,25 @@ const parseMultipartForm = (event) => {
   });
 };
 
-// Helper function to extract text from PDF
 const pdfToText = async (pdfBuffer) => {
-  try {
-    const data = await pdf(pdfBuffer);
-    return data.text;
-  } catch (error) {
-    console.error('Error extracting text from PDF:', error);
-    throw error;
-  }
+  const data = await pdf(pdfBuffer);
+  return data.text;
 };
 
-// Main handler function
 exports.handler = async (event, context) => {
-  console.log('Event:', JSON.stringify(event, null, 2));
-  
-  // Set CORS headers
+  console.log('Function started');
+  const startTime = Date.now();
+
   const headers = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
   };
 
-  // Handle CORS preflight request
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 204, headers, body: '' };
   }
 
-  // Check if it's a POST request
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
@@ -83,11 +64,10 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    console.log('Parsing multipart form data');
+    console.log('Parsing form data');
     const { files } = await parseMultipartForm(event);
     
     if (!files || !files.file) {
-      console.log('No file uploaded');
       return {
         statusCode: 400,
         headers,
@@ -95,41 +75,45 @@ exports.handler = async (event, context) => {
       };
     }
 
-    console.log('File received, extracting text');
-    const pdfContent = files.file.content;
-    const text = await pdfToText(pdfContent);
+    console.log('Extracting text from PDF');
+    const text = await pdfToText(files.file);
 
-    console.log('Text extracted, sending to OpenAI');
-    const prompt = `Convert the following text into a LaTeX document:\n\n${text}`;
+    console.log('Sending to OpenAI');
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4',
+      model: 'gpt-3.5-turbo',  // Using a faster model
       messages: [
-        {
-          role: 'system',
-          content: 'You are a LaTeX expert. Convert the given text into a well-structured LaTeX document. Include appropriate LaTeX commands and environments.',
-        },
-        { role: 'user', content: prompt },
+        { role: 'system', content: 'Convert the given text into a LaTeX document. Use appropriate LaTeX commands and environments.' },
+        { role: 'user', content: text },
       ],
-      max_tokens: 1500,
+      max_tokens: 1000,  // Limiting the response size
     });
 
     const latexResponse = completion.choices[0].message.content;
-    console.log('Response received from OpenAI');
+    console.log('OpenAI response received');
+
+    const executionTime = (Date.now() - startTime) / 1000;
+    console.log(`Function completed in ${executionTime} seconds`);
 
     return {
       statusCode: 200,
       headers: { ...headers, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         latex_response: latexResponse,
+        execution_time: executionTime,
         message: 'PDF processed and converted to LaTeX successfully',
       }),
     };
   } catch (error) {
     console.error('Error in handler:', error);
+    const executionTime = (Date.now() - startTime) / 1000;
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({ error: 'Internal Server Error', details: error.message }),
+      body: JSON.stringify({ 
+        error: 'Internal Server Error', 
+        details: error.message,
+        execution_time: executionTime
+      }),
     };
   }
 };
